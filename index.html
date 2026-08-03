@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kình Ngư Cửa Lò - Dự Báo Bơi Biển</title>
+    <title>Kình Ngư Cửa Lò - 218 Bình Minh</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #0077b6; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 12px; color: #333; }
@@ -21,19 +21,22 @@
         .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .status-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-        .weather-banner { background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; }
-        .weather-title { font-size: 12px; font-weight: bold; color: #c2410c; margin-bottom: 4px; }
-        .weather-desc { font-size: 15px; font-weight: bold; color: #9a3412; }
+        .tactics-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; margin-bottom: 15px; font-size: 13px; color: #166534; }
+        .tactics-title { font-weight: bold; margin-bottom: 4px; color: #15803d; display: flex; align-items: center; gap: 5px; }
 
-        .tide-section { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; margin-bottom: 15px; }
-        .tide-title { font-size: 12px; font-weight: bold; color: #0369a1; margin-bottom: 6px; text-align: center; }
-        .tide-details { display: flex; justify-content: space-around; font-size: 13px; text-align: center; }
+        .weather-banner { background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 10px; margin-bottom: 15px; text-align: center; }
+        .weather-title { font-size: 11px; font-weight: bold; color: #c2410c; margin-bottom: 2px; }
+        .weather-desc { font-size: 14px; font-weight: bold; color: #9a3412; }
+
+        .tide-section { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 10px; margin-bottom: 15px; }
+        .tide-title { font-size: 11px; font-weight: bold; color: #0369a1; margin-bottom: 4px; text-align: center; }
+        .tide-details { display: flex; justify-content: space-around; font-size: 12px; text-align: center; }
         .tide-item strong { display: block; font-size: 14px; color: #0284c7; margin-top: 2px; }
 
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .metric-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 10px; text-align: center; }
-        .metric-title { font-size: 12px; color: #666; margin-bottom: 4px; }
-        .metric-val { font-size: 16px; font-weight: bold; color: #0077b6; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .metric-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 10px; text-align: center; }
+        .metric-title { font-size: 11px; color: #666; margin-bottom: 2px; }
+        .metric-val { font-size: 15px; font-weight: bold; color: #0077b6; }
 
         .time-badge { text-align: center; font-size: 11px; color: #888; margin-top: 10px; background: #f1f1f1; padding: 4px 8px; border-radius: 10px; }
     </style>
@@ -43,13 +46,13 @@
 <div class="card">
     <div class="header">
         <h1>🏊‍♂️ KÌNH NGƯ CỬA LÒ</h1>
-        <p>Dự Báo An Toàn Bơi (16:00 - 18:00)</p>
+        <p>Cung Bơi 218 Bình Minh (Cách Bờ 200m)</p>
     </div>
 
     <div class="date-picker" id="datePicker"></div>
 
     <div id="content">
-        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang phân tích thời tiết Cửa Lò...</div>
+        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang phân tích thời tiết & dòng chảy...</div>
     </div>
 
     <div class="time-badge" id="liveTime">Đang cập nhật thời gian thực...</div>
@@ -102,7 +105,7 @@ async function loadBeachData() {
         const dateStr = `${year}-${month}-${day}`;
 
         const waveRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=18.8167&longitude=105.7333&hourly=wave_height&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.8167&longitude=105.7333&hourly=wind_speed_10m,temperature_2m,weathercode,precipitation_probability&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.8167&longitude=105.7333&hourly=wind_speed_10m,wind_direction_10m,temperature_2m,weathercode,precipitation_probability&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
 
         const waveData = await waveRes.json();
         const weatherData = await weatherRes.json();
@@ -115,6 +118,8 @@ async function loadBeachData() {
         const wind17 = weatherData.hourly.wind_speed_10m[17] || 10;
         const wind = Math.max(wind16, wind17).toFixed(1);
 
+        const windDir16 = weatherData.hourly.wind_direction_10m[16] || 180;
+
         const temp = (weatherData.hourly.temperature_2m[16] || 28).toFixed(1);
         const weatherCode = weatherData.hourly.weathercode[16] || 0;
         const rainProb = weatherData.hourly.precipitation_probability[16] || 0;
@@ -125,25 +130,37 @@ async function loadBeachData() {
         const tideState = (dayOfMonth % 2 === 0) ? "Nước dâng (Triều cường)" : "Nước rút (Triều thấp)";
         const peakTime = (dayOfMonth % 2 === 0) ? "17:15" : "15:45";
 
-        // CHỈNH LOGIC: CẢNH BÁO MƯA KHI KHẢ NĂNG MƯA >= 80% HOẶC CÓ DÔNG BÃO (CODE >= 95)
+        // Gợi ý hướng bơi dọc bờ dựa theo hướng gió
+        let swimAdvice = "";
+        if (windDir16 >= 135 && windDir16 <= 225) {
+            swimAdvice = "Gió Đông Nam (Gió nồm): Bơi xuôi gió/dòng về hướng Bắc (phía Lan Châu) trước, quay về sau.";
+        } else {
+            swimAdvice = "Bơi lượt đi ngược gió nhẹ, lượt về xuôi gió để giữ sức cho chặng cuối.";
+        }
+
+        // Logic đánh giá
         let statusClass = 'status-good';
-        let statusMsg = '🟢 THÍCH HỢP BƠI BIỂN!<br><span style="font-size:12px; font-weight:normal;">Sóng êm, thời tiết tốt, lý tưởng bơi 1.5km+</span>';
+        let statusMsg = '🟢 ĐIỀU KIỆN BƠI TỐT!<br><span style="font-size:12px; font-weight:normal;">Sóng mượt ở cự ly cách bờ 200m</span>';
 
         if (rainProb >= 80 || weatherCode >= 95) {
-            // Chỉ cảnh báo nghỉ khi tỷ lệ mưa >= 80% hoặc có dông bão
             statusClass = 'status-danger';
             statusMsg = '🔴 CẢNH BÁO: MƯA LỚN / DÔNG BÃO (>80%) - NGHỈ BƠI!<br><span style="font-size:12px; font-weight:normal;">Mưa to hoặc dông bão nguy hiểm</span>';
         } else if (wave > 1.2 || wind > 25) {
             statusClass = 'status-danger';
-            statusMsg = '🔴 BIỂN ĐỘNG - KHÔNG NÊN BƠI!<br><span style="font-size:12px; font-weight:normal;">Sóng lớn hoặc gió mạnh nguy hiểm</span>';
+            statusMsg = '🔴 BIỂN ĐỘNG - KHÔNG NÊN RA XA BỜ!<br><span style="font-size:12px; font-weight:normal;">Sóng lớn ở khu vực 200m</span>';
         } else if (wave > 0.8 || wind > 18 || rainProb >= 50) {
             statusClass = 'status-warning';
-            statusMsg = '🟡 SÓNG VỪA / CÓ THỂ CÓ MƯA NHẸ<br><span style="font-size:12px; font-weight:normal;">Vẫn bơi tốt nhưng chú ý quan sát thời tiết</span>';
+            statusMsg = '🟡 SÓNG VỪA / GIÓ MẠNH<br><span style="font-size:12px; font-weight:normal;">Chú ý bơi sát nhóm, mang phao bảo hộ</span>';
         }
 
         document.getElementById('content').innerHTML = `
             <div class="status-box ${statusClass}">${statusMsg}</div>
             
+            <div class="tactics-box">
+                <div class="tactics-title">🚩 Chiến Thuật Bơi Dọc Bờ (Cách 200m):</div>
+                <div>${swimAdvice}</div>
+            </div>
+
             <div class="weather-banner">
                 <div class="weather-title">🌤️ THỜI TIẾT KHUNG 16H - 18H</div>
                 <div class="weather-desc">${weatherText}</div>
