@@ -21,20 +21,19 @@
         .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .status-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-        /* Khung Thời Tiết Mưa Nắng */
         .weather-banner { background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; }
-        .weather-title { font-size: 13px; font-weight: bold; color: #c2410c; margin-bottom: 4px; }
-        .weather-desc { font-size: 16px; font-weight: bold; color: #9a3412; }
+        .weather-title { font-size: 12px; font-weight: bold; color: #c2410c; margin-bottom: 4px; }
+        .weather-desc { font-size: 15px; font-weight: bold; color: #9a3412; }
 
         .tide-section { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; margin-bottom: 15px; }
-        .tide-title { font-size: 13px; font-weight: bold; color: #0369a1; margin-bottom: 8px; text-align: center; }
+        .tide-title { font-size: 12px; font-weight: bold; color: #0369a1; margin-bottom: 6px; text-align: center; }
         .tide-details { display: flex; justify-content: space-around; font-size: 13px; text-align: center; }
-        .tide-item strong { display: block; font-size: 15px; color: #0284c7; margin-top: 2px; }
+        .tide-item strong { display: block; font-size: 14px; color: #0284c7; margin-top: 2px; }
 
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .metric-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 10px; text-align: center; }
         .metric-title { font-size: 12px; color: #666; margin-bottom: 4px; }
-        .metric-val { font-size: 17px; font-weight: bold; color: #0077b6; }
+        .metric-val { font-size: 16px; font-weight: bold; color: #0077b6; }
 
         .time-badge { text-align: center; font-size: 11px; color: #888; margin-top: 10px; background: #f1f1f1; padding: 4px 8px; border-radius: 10px; }
     </style>
@@ -44,13 +43,13 @@
 <div class="card">
     <div class="header">
         <h1>🏊‍♂️ KÌNH NGƯ CỬA LÒ</h1>
-        <p>Dự Báo Bơi Biển & Thời Tiết (16:00 - 18:00)</p>
+        <p>Dự Báo An Toàn Bơi (16:00 - 18:00)</p>
     </div>
 
     <div class="date-picker" id="datePicker"></div>
 
     <div id="content">
-        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang tải dữ liệu vệ tinh...</div>
+        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang phân tích thời tiết Cửa Lò...</div>
     </div>
 
     <div class="time-badge" id="liveTime">Đang cập nhật thời gian thực...</div>
@@ -82,15 +81,14 @@ function renderDateButtons() {
     }
 }
 
-// Chuyển mã WMO sang trạng thái Thời tiết Mưa/Nắng
 function getWeatherDescription(code) {
     if (code === 0) return "☀️ Nắng Đẹp (Trời quang)";
-    if (code === 1 || code === 2) return "🌤️ Nắng Nhẹ (Ít mây)";
+    if (code === 1 || code === 2) return "🌤️ Nắng Nhẹ (Khô ráo)";
     if (code === 3) return "☁️ Nhiều Mây / Âm U";
-    if (code >= 51 && code <= 55) return "🌧️ Mưa Mù / Mưa Phùn";
-    if (code >= 61 && code <= 65) return "🌧️ Có Mưa (Mưa vừa)";
-    if (code >= 80 && code <= 82) return "🌦️ Mưa Rào Rải Rác";
-    if (code >= 95) return "⛈️ Có Dông Giông Bão";
+    if (code >= 51 && code <= 55) return "🌧️ Mưa Mù / Mưa Phùn Nhẹ";
+    if (code >= 61 && code <= 65) return "🌧️ CÓ MƯA VỪA";
+    if (code >= 80 && code <= 82) return "🌦️ MƯA RÀO RẢI RÁC";
+    if (code >= 95) return "⛈️ DÔNG BÃO / SẤM SÉT";
     return "🌤️ Thời Tiết Bình Thường";
 }
 
@@ -127,15 +125,20 @@ async function loadBeachData() {
         const tideState = (dayOfMonth % 2 === 0) ? "Nước dâng (Triều cường)" : "Nước rút (Triều thấp)";
         const peakTime = (dayOfMonth % 2 === 0) ? "17:15" : "15:45";
 
+        // CHỈNH LOGIC: CẢNH BÁO MƯA KHI KHẢ NĂNG MƯA >= 80% HOẶC CÓ DÔNG BÃO (CODE >= 95)
         let statusClass = 'status-good';
-        let statusMsg = '🟢 BIỂN ÊM - THÍCH HỢP BƠI!<br><span style="font-size:12px; font-weight:normal;">Sóng nhẹ, lý tưởng bơi 1.5km+</span>';
+        let statusMsg = '🟢 THÍCH HỢP BƠI BIỂN!<br><span style="font-size:12px; font-weight:normal;">Sóng êm, thời tiết tốt, lý tưởng bơi 1.5km+</span>';
 
-        if (wave > 1.2 || wind > 25 || weatherCode >= 95) {
+        if (rainProb >= 80 || weatherCode >= 95) {
+            // Chỉ cảnh báo nghỉ khi tỷ lệ mưa >= 80% hoặc có dông bão
             statusClass = 'status-danger';
-            statusMsg = '🔴 CẢNH BÁO - NGHỈ HOẶC CẨN TRỌNG!<br><span style="font-size:12px; font-weight:normal;">Sóng lớn, gió mạnh hoặc dông bão</span>';
-        } else if (wave > 0.8 || wind > 18 || rainProb > 60) {
+            statusMsg = '🔴 CẢNH BÁO: MƯA LỚN / DÔNG BÃO (>80%) - NGHỈ BƠI!<br><span style="font-size:12px; font-weight:normal;">Mưa to hoặc dông bão nguy hiểm</span>';
+        } else if (wave > 1.2 || wind > 25) {
+            statusClass = 'status-danger';
+            statusMsg = '🔴 BIỂN ĐỘNG - KHÔNG NÊN BƠI!<br><span style="font-size:12px; font-weight:normal;">Sóng lớn hoặc gió mạnh nguy hiểm</span>';
+        } else if (wave > 0.8 || wind > 18 || rainProb >= 50) {
             statusClass = 'status-warning';
-            statusMsg = '🟡 SÓNG VỪA / CÓ KHẢ NĂNG MƯA<br><span style="font-size:12px; font-weight:normal;">Bơi được nhưng chú ý quan sát</span>';
+            statusMsg = '🟡 SÓNG VỪA / CÓ THỂ CÓ MƯA NHẸ<br><span style="font-size:12px; font-weight:normal;">Vẫn bơi tốt nhưng chú ý quan sát thời tiết</span>';
         }
 
         document.getElementById('content').innerHTML = `
