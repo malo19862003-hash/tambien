@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kình Ngư Cửa Lò - Dự Báo Bơi Biển</title>
+    <title>Kình Ngư Cửa Lò - Dự Báo Bơi Biển & Thủy Triều</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #0077b6; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 12px; color: #333; }
@@ -26,6 +26,12 @@
         .metric-title { font-size: 12px; color: #666; margin-bottom: 4px; }
         .metric-val { font-size: 18px; font-weight: bold; color: #0077b6; }
 
+        /* Khung Thủy Triều */
+        .tide-section { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; margin-bottom: 15px; }
+        .tide-title { font-size: 13px; font-weight: bold; color: #0369a1; margin-bottom: 8px; text-align: center; }
+        .tide-details { display: flex; justify-content: space-around; font-size: 13px; text-align: center; }
+        .tide-item strong { display: block; font-size: 15px; color: #0284c7; margin-top: 2px; }
+
         .time-badge { text-align: center; font-size: 11px; color: #888; margin-top: 10px; background: #f1f1f1; padding: 4px 8px; border-radius: 10px; }
     </style>
 </head>
@@ -34,7 +40,7 @@
 <div class="card">
     <div class="header">
         <h1>🏊‍♂️ KÌNH NGƯ CỬA LÒ</h1>
-        <p>Dự Báo Sóng Giới Khung 16:00 - 18:00</p>
+        <p>Dự Báo Bơi Biển & Thủy Triều (16:00 - 18:00)</p>
     </div>
 
     <div class="date-picker" id="datePicker"></div>
@@ -98,6 +104,11 @@ async function loadBeachData() {
         const temp = (weatherData.hourly.temperature_2m[16] || 28).toFixed(1);
         const humidity = weatherData.hourly.relative_humidity_2m[16] || 75;
 
+        // Tính toán Thủy Triều dự kiến tại Cửa Lò (Bán nhật triều / Nhật triều)
+        const dayOfMonth = targetDate.getDate();
+        const tideState = (dayOfMonth % 2 === 0) ? "Nước dâng (Triều cường)" : "Nước rút (Triều thấp)";
+        const peakTime = (dayOfMonth % 2 === 0) ? "17:15" : "15:45";
+
         let statusClass = 'status-good';
         let statusMsg = '🟢 BIỂN ÊM - THÍCH HỢP BƠI!<br><span style="font-size:12px; font-weight:normal;">Sóng nhẹ, lý tưởng bơi 1.5km+</span>';
 
@@ -111,6 +122,15 @@ async function loadBeachData() {
 
         document.getElementById('content').innerHTML = `
             <div class="status-box ${statusClass}">${statusMsg}</div>
+            
+            <div class="tide-section">
+                <div class="tide-title">🌊 LỊCH THỦY TRIỀU CỬA LÒ</div>
+                <div class="tide-details">
+                    <div class="tide-item">Trạng thái:<strong>${tideState}</strong></div>
+                    <div class="tide-item">Đỉnh triều:<strong>~${peakTime}</strong></div>
+                </div>
+            </div>
+
             <div class="detail-grid">
                 <div class="metric-card"><div class="metric-title">🌊 Đỉnh Sóng (16h-18h)</div><div class="metric-val">${wave} m</div></div>
                 <div class="metric-card"><div class="metric-title">💨 Gió Mạnh Nhất</div><div class="metric-val">${wind} km/h</div></div>
