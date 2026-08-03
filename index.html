@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kình Ngư Cửa Lò - Dự Báo Bơi Biển</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #0077b6; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 12px; color: #333; }
+        .card { background: #fff; border-radius: 18px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; }
+        .header h1 { color: #0077b6; font-size: 20px; font-weight: 800; }
+        .header p { color: #666; font-size: 13px; margin-top: 4px; }
+        
+        .date-picker { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
+        .date-btn { background: #f0f4f8; border: 1px solid #d0e0e0; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #555; }
+        .date-btn.active { background: #0077b6; color: #fff; border-color: #0077b6; }
+
+        .status-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px; font-weight: bold; font-size: 15px; line-height: 1.4; }
+        .status-good { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .status-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .metric-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 10px; text-align: center; }
+        .metric-title { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .metric-val { font-size: 18px; font-weight: bold; color: #0077b6; }
+
+        .time-badge { text-align: center; font-size: 11px; color: #888; margin-top: 10px; background: #f1f1f1; padding: 4px 8px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1>🏊‍♂️ KÌNH NGƯ CỬA LÒ</h1>
+        <p>Dự Báo Sóng Giới Khung 16:00 - 18:00</p>
+    </div>
+
+    <div class="date-picker" id="datePicker"></div>
+
+    <div id="content">
+        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang tải dữ liệu thời gian thực...</div>
+    </div>
+
+    <div class="time-badge" id="liveTime">Đang cập nhật thời gian thực...</div>
+</div>
+
+<script>
+let selectedDayOffset = 0;
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('liveTime').innerText = `⏱️ Hiện tại: ${now.toLocaleTimeString('vi-VN')} - ${now.toLocaleDateString('vi-VN')}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function renderDateButtons() {
+    const container = document.getElementById('datePicker');
+    container.innerHTML = '';
+    const days = ['Hôm nay', 'Ngày mai', 'Ngày kia'];
+    for (let i = 0; i < 5; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        const label = i < 3 ? days[i] : `${d.getDate()}/${d.getMonth()+1}`;
+        const btn = document.createElement('button');
+        btn.className = `date-btn ${i === selectedDayOffset ? 'active' : ''}`;
+        btn.innerText = label;
+        btn.onclick = () => { selectedDayOffset = i; renderDateButtons(); loadBeachData(); };
+        container.appendChild(btn);
+    }
+}
+
+async function loadBeachData() {
+    try {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + selectedDayOffset);
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        const waveRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=18.8167&longitude=105.7333&hourly=wave_height&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.8167&longitude=105.7333&hourly=wind_speed_10m,temperature_2m,relative_humidity_2m&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+
+        const waveData = await waveRes.json();
+        const weatherData = await weatherRes.json();
+
+        const wave16 = waveData.hourly.wave_height[16] || 0.4;
+        const wave17 = waveData.hourly.wave_height[17] || 0.4;
+        const wave = Math.max(wave16, wave17).toFixed(1);
+
+        const wind16 = weatherData.hourly.wind_speed_10m[16] || 10;
+        const wind17 = weatherData.hourly.wind_speed_10m[17] || 10;
+        const wind = Math.max(wind16, wind17).toFixed(1);
+
+        const temp = (weatherData.hourly.temperature_2m[16] || 28).toFixed(1);
+        const humidity = weatherData.hourly.relative_humidity_2m[16] || 75;
+
+        let statusClass = 'status-good';
+        let statusMsg = '🟢 BIỂN ÊM - THÍCH HỢP BƠI!<br><span style="font-size:12px; font-weight:normal;">Sóng nhẹ, lý tưởng bơi 1.5km+</span>';
+
+        if (wave > 1.2 || wind > 25) {
+            statusClass = 'status-danger';
+            statusMsg = '🔴 BIỂN ĐỘNG - NGHỈ HOẶC CẨN TRỌNG!<br><span style="font-size:12px; font-weight:normal;">Sóng lớn hoặc gió mạnh nguy hiểm</span>';
+        } else if (wave > 0.8 || wind > 18) {
+            statusClass = 'status-warning';
+            statusMsg = '🟡 SÓNG VỪA / GIÓ MẠNH<br><span style="font-size:12px; font-weight:normal;">Bơi được nhưng tốn sức hơn</span>';
+        }
+
+        document.getElementById('content').innerHTML = `
+            <div class="status-box ${statusClass}">${statusMsg}</div>
+            <div class="detail-grid">
+                <div class="metric-card"><div class="metric-title">🌊 Đỉnh Sóng (16h-18h)</div><div class="metric-val">${wave} m</div></div>
+                <div class="metric-card"><div class="metric-title">💨 Gió Mạnh Nhất</div><div class="metric-val">${wind} km/h</div></div>
+                <div class="metric-card"><div class="metric-title">🌡️ Nhiệt Độ</div><div class="metric-val">${temp} °C</div></div>
+                <div class="metric-card"><div class="metric-title">💧 Độ Ẩm</div><div class="metric-val">${humidity}%</div></div>
+            </div>
+        `;
+    } catch(e) {
+        document.getElementById('content').innerHTML = '<div class="status-box status-warning">⚠️ Lỗi kết nối vệ tinh. Vui lòng thử lại!</div>';
+    }
+}
+
+renderDateButtons();
+loadBeachData();
+</script>
+</body>
+</html>
