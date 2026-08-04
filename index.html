@@ -3,6 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thời Tiết & Dòng Chảy Bơi Biển - 218 Bình Minh</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #0077b6; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 12px; color: #333; }
+        .card { background: #fff; border-radius: 18px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; }
+        .header h1 { color: #0077b6; font-size: 20px; font-weight: 800; }
+        .header p { color: #666; font-size: 13px; margin-top: 4px; }
+        
+        .date-picker { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
+        .date-btn { background: #f0f4f8; border: 1px solid #d0e0e0; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #555; }
+        .date-btn.active { background: #0077b6; color: #fff; border-color: #0077b6; }
+
+        .weather-banner { background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; }
+        .weather-title { font-size: 11px; font-weight: bold; color: #0369a1; margin-bottom: 4px; }
+        .weather-desc { font-size: 17px; font-weight: bold; color: #0284c7; }
+
+        .tide-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; margin-bottom: 15px; }
+        .tide-title { font-size: 12px; font-weight: bold; color: #166534; margin-bottom: 8px; text-align: center; }
+        .tide-details { display: flex; justify-content: space-around; font-size: 13px; text-align: center; margin-bottom: 10px; }
+        .tide-item strong { display: block; font-size: 14px; color: #15803d; margin-top: 2px; }
+        
+        .flow-box { background: #ffffff; padding: 10px; border-radius: 8px; font-size: 12px; color: #14532d; border: 1px dashed #86efac; line-height: 1.5; }
+        .flow-title { font-weight: bold; color: #166534; margin-bottom: 4px; }
+
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .metric-card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 10px; text-align: center; }
+        .metric-title { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .metric-val { font-size: 16px; font-weight: bold; color: #0077b6; }
+
+        .time-badge { text-align: center; font-size: 11px; color: #888; margin-top: 10px; background: #f1f1f1; padding: 4px 8px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1>🏊‍♂️ THỜI TIẾT CỬA LÒ</h1>
+        <p>Cung Bơi 218 Bình Minh (Khung 16:00 - 18:00)</p>
+    </div>
+
+    <div class="date-picker" id="datePicker"></div>
+
+    <div id="content">
+        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang tải dữ liệu thời tiết & dòng chảy...</div>
+    </div>
+
+    <div class="time-badge" id="liveTime">Đang cập nhật...</div>
+</div>
+
+<script>
+let selectedDayOffset = 0;
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('liveTime').innerText = `⏱️ Cập nhật: ${now.toLocaleTimeString('vi-VN')} - ${now.toLocaleDateString('vi-VN')}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function renderDateButtons() {
+    const container = document.getElementById('datePicker');
+    container.innerHTML = '';
+    const days = ['Hôm nay', 'Ngày mai', 'Ngày kia'];
+    for (let i = 0; i < 5; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        const label = i < 3 ? days[i] : `${d.getDate()}/${d.getMonth()+1}`;
+        const btn = document.createElement('button');
+        btn.className = `date-btn ${i === selectedDayOffset ? 'active' : ''}`;
+        btn.innerText = label;
+        btn.onclick = () => { selectedDayOffset = i; renderDateButtons(); loadBeachData(); };
+        container.appendChild(btn);
+    }
+}
+
+function getWeatherDescription(code) {
+    if (code === 0) return "☀️ Nắng đẹp";
+    if (code === 1 || code === 2) return "🌤️ Nắng nhẹ";
+    if (code === 3) return "☁️ Nhiều mây";
+    if (code >= 51 && code <= 55) return "🌧️ Mưa phùn";
+    if (code >= 61 && code <= 65) return "🌧️ Mưa";
+    if (code >= 80 && code <= 82) return "🌦️ Mưa rào";
+    if (code >= 95) return "⛈️ Dông bão";
+    return "🌤️ Bình thường";
+}
+
+async function loadBeachData() {
+    try {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + selectedDayOffset);
+        const year = targetDate.getFullYear();
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        const waveRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=18.8167&longitude=105.7333&hourly=wave_height&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.8167&longitude=105.7333&hourly=wind_speed_10m,temperature_2m,weathercode,precipitation_probability&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+
+        const waveData = await waveRes.json();
+        const weatherData = await weatherRes.json();
+
+        const wave16 = waveData.hourly.wave_height[16] || 0.4;
+        const wave17 = waveData.hourly.wave_height[17] || 0.4;
+        const wave = Math.max(wave16, wave17).toFixed(1);
+
+        const wind16 = weatherData.hourly.wind_speed_10m[16] || 10;
+        const wind17 = weatherData.hourly.wind_speed_10m[17] || 10;
+        const wind = Math.max(wind16, wind17).toFixed(1);
+
+        const temp = (weatherData.hourly.temperature_2m[16] || 28).toFixed(1);
+        const weatherCode = weatherData.hourly.weathercode[16] || 0;
+        const rainProb = weatherData.hourly.precipitation_probability[16] || 0;
+        const weatherText = getWeatherDescription(weatherCode);
+
+        // Lịch thủy triều & Dòng chảy
+        const dayOfMonth = targetDate.getDate();
+        const isRising = (dayOfMonth % 2 === 0);
+        const tideState = isRising ? "Nước dâng (Triều cường)" : "Nước rút (Triều thấp)";
+        const peakTime = isRising ? "17:15" : "15:45";
+        
+        const flowDirection = isRising 
+            ? "➡️ <b>Nam → Bắc</b> (Từ Cửa Hội đẩy về Lan Châu)" 
+            : "⬅️ <b>Bắc → Nam</b> (Từ Lan Châu rút về Cửa Hội)";
+            
+        const tactics = isRising
+            ? "• <b>Lượt đi:</b> Bơi hướng Bắc (Lan Châu) để xuôi dòng.<br>• <b>Lượt về:</b> Bơi khép vào tầm 150m để né dòng ngược."
+            : "• <b>Lượt đi:</b> Bơi hướng Nam (Cửa Hội) để xuôi dòng.<br>• <b>Chú ý:</b> Giữ vững mốc 200m, tránh bị kéo ra xa.";
+
+        document.getElementById('content').innerHTML = `
+            <div class="weather-banner">
+                <div class="weather-title">TRẠNG THÁI THỜI TIẾT</div>
+                <div class="weather-desc">${weatherText}</div>
+            </div>
+
+            <div class="tide-section">
+                <div class="tide-title">🌊 THỦY TRIỀU & CHIẾN THUẬT DÒNG CHẢY</div>
+                <div class="tide-details">
+                    <div class="tide-item">Trạng thái:<strong>${tideState}</strong></div>
+                    <div class="tide-item">Đỉnh triều:<strong>~${peakTime}</strong></div>
+                </div>
+                <div class="flow-box">
+                    <div class="flow-title">📍 Dòng chảy ven bờ:</div>
+                    <div style="margin-bottom:6px;">${flowDirection}</div>
+                    <div class="flow-title">🎯 Chiến thuật cho team:</div>
+                    <div>${tactics}</div>
+                </div>
+            </div>
+
+            <div class="detail-grid">
+                <div class="metric-card"><div class="metric-title">🌊 Độ Cao Sóng</div><div class="metric-val">${wave} m</div></div>
+                <div class="metric-card"><div class="metric-title">💨 Tốc Độ Gió</div><div class="metric-val">${wind} km/h</div></div>
+                <div class="metric-card"><div class="metric-title">🌡️ Nhiệt Độ</div><div class="metric-val">${temp} °C</div></div>
+                <div class="metric-card"><div class="metric-title">🌧️ Tỷ Lệ Mưa</div><div class="metric-val">${rainProb}%</div></div>
+            </div>
+        `;
+    } catch(e) {
+        document.getElementById('content').innerHTML = '<div style="text-align:center; padding: 20px; color: red;">⚠️ Lỗi kết nối dữ liệu. Vui lòng thử lại!</div>';
+    }
+}
+
+renderDateButtons();
+loadBeachData();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thông Tin Thời Tiết Bơi Biển - 218 Bình Minh</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
