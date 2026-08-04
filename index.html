@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thời Tiết & Dòng Chảy Bơi Biển - 218 Bình Minh</title>
+    <title>Thời Tiết & Dòng Chảy - 218 Bình Minh</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #0077b6; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 12px; color: #333; }
         .card { background: #fff; border-radius: 18px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        
         .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; }
-        .header h1 { color: #0077b6; font-size: 20px; font-weight: 800; }
-        .header p { color: #666; font-size: 13px; margin-top: 4px; }
+        .header h1 { color: #0077b6; font-size: 19px; font-weight: 800; }
+        .header p { color: #666; font-size: 12px; margin-top: 4px; font-weight: 600; }
         
         .date-picker { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
         .date-btn { background: #f0f4f8; border: 1px solid #d0e0e0; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #555; }
@@ -40,14 +41,14 @@
 
 <div class="card">
     <div class="header">
-        <h1>🏊‍♂️ THỜI TIẾT CỬA LÒ</h1>
-        <p>Cung Bơi 218 Bình Minh (Khung 16:00 - 18:00)</p>
+        <h1>🏊‍♂️ THỜI TIẾT TRẠM 218 BÌNH MINH</h1>
+        <p>📍 Tọa độ GPS: 18°48'29.6"N 105°43'27.8"E</p>
     </div>
 
     <div class="date-picker" id="datePicker"></div>
 
     <div id="content">
-        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang tải dữ liệu thời tiết & dòng chảy...</div>
+        <div style="text-align:center; padding: 20px; color: #666;">⏳ Đang tải dữ liệu thời tiết tại vị trí GPS...</div>
     </div>
 
     <div class="time-badge" id="liveTime">Đang cập nhật...</div>
@@ -74,7 +75,11 @@ function renderDateButtons() {
         const btn = document.createElement('button');
         btn.className = `date-btn ${i === selectedDayOffset ? 'active' : ''}`;
         btn.innerText = label;
-        btn.onclick = () => { selectedDayOffset = i; renderDateButtons(); loadBeachData(); };
+        btn.onclick = () => { 
+            selectedDayOffset = i; 
+            renderDateButtons(); 
+            loadBeachData(); 
+        };
         container.appendChild(btn);
     }
 }
@@ -91,6 +96,9 @@ function getWeatherDescription(code) {
 }
 
 async function loadBeachData() {
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">⏳ Đang định vị và tải dữ liệu...</div>';
+
     try {
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + selectedDayOffset);
@@ -99,8 +107,12 @@ async function loadBeachData() {
         const day = String(targetDate.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
 
-        const waveRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=18.8167&longitude=105.7333&hourly=wave_height&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.8167&longitude=105.7333&hourly=wind_speed_10m,temperature_2m,weathercode,precipitation_probability&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+        // Tọa độ GPS chuẩn từ Google Maps (18°48'29.6"N 105°43'27.8"E)
+        const lat = 18.808222;
+        const lng = 105.724389;
+
+        const waveRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=wave_height&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=wind_speed_10m,temperature_2m,weathercode,precipitation_probability&timezone=Asia%2FBangkok&start_date=${dateStr}&end_date=${dateStr}`);
 
         const waveData = await waveRes.json();
         const weatherData = await weatherRes.json();
@@ -118,23 +130,23 @@ async function loadBeachData() {
         const rainProb = weatherData.hourly.precipitation_probability[16] || 0;
         const weatherText = getWeatherDescription(weatherCode);
 
-        // Lịch thủy triều & Dòng chảy
+        // Thủy triều và Dòng chảy
         const dayOfMonth = targetDate.getDate();
         const isRising = (dayOfMonth % 2 === 0);
         const tideState = isRising ? "Nước dâng (Triều cường)" : "Nước rút (Triều thấp)";
         const peakTime = isRising ? "17:15" : "15:45";
         
         const flowDirection = isRising 
-            ? "➡️ <b>Nam → Bắc</b> (Từ Cửa Hội đẩy về Lan Châu)" 
-            : "⬅️ <b>Bắc → Nam</b> (Từ Lan Châu rút về Cửa Hội)";
+            ? "➡️ <b>Nam → Bắc</b> (Đẩy về phía Lan Châu)" 
+            : "⬅️ <b>Bắc → Nam</b> (Rút về phía Cửa Hội)";
             
         const tactics = isRising
-            ? "• <b>Lượt đi:</b> Bơi hướng Bắc (Lan Châu) để xuôi dòng.<br>• <b>Lượt về:</b> Bơi khép vào tầm 150m để né dòng ngược."
-            : "• <b>Lượt đi:</b> Bơi hướng Nam (Cửa Hội) để xuôi dòng.<br>• <b>Chú ý:</b> Giữ vững mốc 200m, tránh bị kéo ra xa.";
+            ? "• <b>Lượt đi:</b> Bơi về phía Bắc (Lan Châu) để xuôi dòng.<br>• <b>Lượt về:</b> Bơi sát bờ tầm 150m né dòng ngược."
+            : "• <b>Lượt đi:</b> Bơi về phía Nam (Cửa Hội) để xuôi dòng.<br>• <b>Chú ý:</b> Giữ khoảng cách 200m, tránh dòng kéo xa.";
 
-        document.getElementById('content').innerHTML = `
+        contentDiv.innerHTML = `
             <div class="weather-banner">
-                <div class="weather-title">TRẠNG THÁI THỜI TIẾT</div>
+                <div class="weather-title">TRẠNG THÁI THỜI TIẾT TẠI BÃI BƠI</div>
                 <div class="weather-desc">${weatherText}</div>
             </div>
 
@@ -160,7 +172,7 @@ async function loadBeachData() {
             </div>
         `;
     } catch(e) {
-        document.getElementById('content').innerHTML = '<div style="text-align:center; padding: 20px; color: red;">⚠️ Lỗi kết nối dữ liệu. Vui lòng thử lại!</div>';
+        contentDiv.innerHTML = '<div style="text-align:center; padding: 20px; color: red;">⚠️ Lỗi kết nối dữ liệu tọa độ. Vui lòng thử lại!</div>';
     }
 }
 
